@@ -52,6 +52,9 @@
   .console-date{font-size:13px; color:var(--muted); margin-bottom:2px;}
   .console-title{font-family:'Barlow Condensed'; font-size:22px; font-weight:600;
     text-transform:uppercase; letter-spacing:.03em;}
+  .terrain{display:inline-block; margin-top:8px; font-size:13px; padding:4px 10px;
+    border-radius:99px; border:1px solid var(--line); color:var(--muted); background:var(--surface2);}
+  .terrain.ext{border-color:var(--ok); color:var(--ok); background:rgba(61,220,151,.08);}
   .readout{display:flex; gap:22px; padding:14px 16px 4px; align-items:flex-end;}
   .readout .big{font-family:'Space Mono',monospace; font-size:44px; font-weight:700;
     color:var(--led); line-height:1; text-shadow:0 0 18px rgba(255,107,53,.35);}
@@ -59,8 +62,14 @@
   .readout .sec{margin-left:auto; text-align:right;}
   .readout .sec .big{font-size:28px; color:var(--txt); text-shadow:none;}
   .steps{padding:10px 16px 14px;}
-  .step{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line);}
+  .step{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px dashed var(--line);
+    cursor:pointer; user-select:none; -webkit-user-select:none;}
   .step:last-child{border-bottom:none;}
+  .step-check{width:24px; height:24px; flex:0 0 24px; border-radius:50%; border:2px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#06251A;}
+  .step.checked .step-check{background:var(--ok); border-color:var(--ok);}
+  .step.checked .step-name, .step.checked .step-meta{color:var(--muted); text-decoration:line-through;}
+  .steps-count{font-size:13px; color:var(--muted); text-align:right; padding:0 16px;}
   .step-dot{width:8px; height:8px; border-radius:50%; flex:0 0 8px;}
   .dot-walk{background:var(--muted);} .dot-run{background:var(--led);}
   .dot-fast{background:var(--warn);} .dot-race{background:#7EB8FF;}
@@ -100,6 +109,35 @@
   .speeds-derived{display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:8px; font-size:14px;}
   .speeds-derived span{color:var(--muted);}
   .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:18px;}
+
+  /* ---------- onglets ---------- */
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tab{flex:1; text-align:center; padding:11px 8px; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface); color:var(--muted); font-family:'Barlow Condensed';
+    text-transform:uppercase; letter-spacing:.06em; font-size:16px; font-weight:600; cursor:pointer;}
+  .tab.active{background:var(--led); border-color:var(--led); color:#2A0E02;}
+
+  /* ---------- vue programme ---------- */
+  .ph-head{font-family:'Barlow Condensed'; text-transform:uppercase; letter-spacing:.06em;
+    font-size:16px; color:var(--muted); margin:18px 4px 8px; display:flex; justify-content:space-between;}
+  .pw{background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-bottom:8px; overflow:hidden;}
+  .pw.cur{border-color:var(--led);}
+  .pw-head{display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;}
+  .pw-num{font-family:'Space Mono',monospace; font-size:13px; color:var(--muted);
+    min-width:34px; text-align:center; background:var(--surface2); border-radius:8px; padding:4px 0;}
+  .pw.cur .pw-num{background:var(--led); color:#2A0E02; font-weight:700;}
+  .pw.done .pw-num{color:var(--ok);}
+  .pw-title{flex:1; font-size:14px;}
+  .pw.done .pw-title{color:var(--muted);}
+  .pw-dots{display:flex; gap:5px;}
+  .pw-dots .wdot{width:10px; height:10px;}
+  .pw-body{display:none; border-top:1px solid var(--line); padding:8px 14px 12px;}
+  .pw.open .pw-body{display:block;}
+  .pw-sess{display:flex; justify-content:space-between; gap:10px; padding:7px 0;
+    border-bottom:1px dashed var(--line); font-size:14px;}
+  .pw-sess:last-of-type{border-bottom:none;}
+  .pw-sess .m{font-family:'Space Mono',monospace; font-size:13px; color:var(--muted); white-space:nowrap;}
+  .pw-jump{margin-top:10px; width:100%; padding:10px; font-size:14px;}
   .done-all{text-align:center; padding:30px 16px;}
   .done-all .big{font-size:46px;}
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
@@ -114,6 +152,11 @@
 
 <div id="noteZone"></div>
 
+<div class="tabs">
+  <button class="tab active" id="tabToday">Séance</button>
+  <button class="tab" id="tabProgram">Programme</button>
+</div>
+
 <div class="progress-card">
   <div class="progress-top">
     <div class="disp" id="weekLabel"></div>
@@ -123,6 +166,7 @@
   <div class="milestones" id="milestones"></div>
 </div>
 
+<div id="todayView">
 <div id="mainZone"></div>
 
 <div class="week-strip" id="weekStrip"></div>
@@ -147,6 +191,9 @@
   <p class="muted" id="statsLine"></p>
   <button class="btn-ghost" id="resetBtn" style="margin-top:10px">Réinitialiser tout le programme</button>
 </div>
+</div><!-- /todayView -->
+
+<div id="programView" style="display:none"></div>
 
 <p class="foot">3 séances/semaine · tapis à 0 % · le programme démarre dès ta 1re séance<br>Douleur articulaire = stop &amp; repos.</p>
 
@@ -264,8 +311,12 @@ function buildProgram(){
   const sessions=[];
   weeks.forEach((w,wi)=>{
     w.sessions.forEach((s,si)=>{
-      sessions.push({week:wi+1, phase:w.phase, slot:si, label:s.label, steps:s.steps,
-        race:!!s.race, taper:!!w.taper});
+      const week=wi+1;
+      let terrain='tapis';
+      if(s.race) terrain='ext';
+      else if(week>=31 && si===2) terrain='ext-reco';
+      sessions.push({week, phase:w.phase, slot:si, label:s.label, steps:s.steps,
+        race:!!s.race, taper:!!w.taper, terrain});
     });
   });
   return sessions;
@@ -279,7 +330,8 @@ const firstIdxOfWeek = w => SESSIONS.findIndex(s=>s.week===w);
    ========================================================= */
 let state = {
   idx:0, baseSpeed:7.5, history:[], hardByWeek:{},
-  pausedSince:null, lastDoneDate:null
+  pausedSince:null, lastDoneDate:null,
+  stepProgress:{sessionIdx:-1, done:[]}
 };
 let transientNote = null;
 
@@ -329,6 +381,7 @@ function validate(ok){
   const s=SESSIONS[state.idx];
   state.history.push({idx:state.idx, ok, date:new Date().toISOString()});
   state.lastDoneDate=new Date().toISOString();
+  state.stepProgress={sessionIdx:-1, done:[]};
   if(!ok){
     state.hardByWeek[s.week]=(state.hardByWeek[s.week]||0)+1;
     if(state.hardByWeek[s.week]>=2){
@@ -417,23 +470,44 @@ function render(){
   } else {
     const total=s.steps.reduce((a,st)=>a+st.min,0);
     const kmEst=s.steps.reduce((a,st)=>a+st.min/60*spd[st.k].v,0);
-    const stepsHtml=s.steps.map(st=>{
-      const sp=spd[st.k];
+    // Progression des étapes de la séance en cours
+    if(!state.stepProgress || state.stepProgress.sessionIdx!==state.idx){
+      state.stepProgress={sessionIdx:state.idx, done:new Array(s.steps.length).fill(false)};
+    }
+    const sp=state.stepProgress;
+    const doneCount=sp.done.filter(Boolean).length;
+    const stepsHtml=s.steps.map((st,i)=>{
+      const spdI=spd[st.k];
       const min=st.min>=1?(st.min%1===0?st.min+' min':st.min+' min'):Math.round(st.min*60)+' s';
-      return '<div class="step"><span class="step-dot '+sp.cls+'"></span>'+
+      return '<div class="step'+(sp.done[i]?' checked':'')+'" data-step="'+i+'" role="checkbox" aria-checked="'+sp.done[i]+'">'+
+        '<span class="step-check">'+(sp.done[i]?'✓':'')+'</span>'+
+        '<span class="step-dot '+spdI.cls+'"></span>'+
         '<span class="step-name">'+st.n+'</span>'+
-        '<span class="step-meta">'+min+' · '+sp.v.toFixed(1)+' km/h</span></div>';
+        '<span class="step-meta">'+min+' · '+spdI.v.toFixed(1)+' km/h</span></div>';
     }).join('');
+    const terrainBadge = s.terrain==='ext'
+      ? '<span class="terrain ext">🌳 Extérieur — jour de course</span>'
+      : s.terrain==='ext-reco'
+      ? '<span class="terrain ext">🌳 Extérieur recommandé — habitue tes jambes au bitume (tapis possible si météo impossible)</span>'
+      : '<span class="terrain">🏠 Tapis · 0 % d\'inclinaison</span>';
     el('mainZone').innerHTML='<div class="console">'+
       '<div class="console-head"><div class="console-date">'+fmtDate(nextSessionDate())+'</div>'+
-      '<div class="console-title">Semaine '+s.week+' — '+s.label+'</div></div>'+
+      '<div class="console-title">Semaine '+s.week+' — '+s.label+'</div>'+terrainBadge+'</div>'+
       '<div class="readout"><div><span class="big mono">'+Math.round(total)+'</span></div><div class="unit">min</div>'+
       '<div class="sec"><span class="big mono">'+kmEst.toFixed(1)+'</span><div class="unit">km estimés</div></div></div>'+
+      '<div class="steps-count">'+doneCount+' / '+s.steps.length+' étapes</div>'+
       '<div class="steps">'+stepsHtml+'</div>'+
       '<div class="btn-row"><button class="btn-ok" id="okBtn">✓ Séance faite</button>'+
       '<button class="btn-hard" id="hardBtn">Trop difficile</button></div></div>';
     el('okBtn').onclick=()=>validate(true);
     el('hardBtn').onclick=()=>validate(false);
+    el('mainZone').querySelectorAll('.step').forEach(div=>{
+      div.onclick=()=>{
+        const i=+div.dataset.step;
+        state.stepProgress.done[i]=!state.stepProgress.done[i];
+        save(); render();
+      };
+    });
   }
 
   // Week strip
@@ -473,6 +547,106 @@ function render(){
   el('statsLine').textContent=okCount+' séance(s) validée(s) · '+
     state.history.filter(h=>!h.ok).length+' difficile(s) · programme de '+TOTAL+' séances sur 36 semaines.';
 }
+
+/* =========================================================
+   VUE PROGRAMME (36 semaines)
+   ========================================================= */
+let curTab='today';
+const openWeeks=new Set();
+
+function weekSummary(w){
+  const first=SESSIONS[firstIdxOfWeek(w)];
+  if(first.race) return 'Semaine de course 🏁';
+  if(first.taper) return 'Allègement avant course';
+  if(first.phase===1){
+    const runs=first.steps.filter(s=>s.n.startsWith('Course '));
+    if(runs.length>1) return runs.length+' × '+(runs[0].min%1===0?runs[0].min:runs[0].min)+' min course / marche';
+    return 'Course continue '+Math.round(first.steps.find(s=>s.k==='easy').min)+' min';
+  }
+  const c=SESSIONS[firstIdxOfWeek(w)+2];
+  const cMin=c.steps.reduce((a,s)=>a+s.min,0);
+  return (first.phase===2?'Endurance · ':'Prépa semi · ')+'sortie longue '+Math.round(cMin)+' min';
+}
+
+function renderProgram(){
+  const spd=speeds();
+  const curWeek=state.idx>=TOTAL?37:SESSIONS[state.idx].week;
+  const phases={1:'Phase 1 · Fondations (S1-10)',2:'Phase 2 · Endurance (S11-22)',3:'Phase 3 · Prépa semi (S23-36)'};
+  let html='', lastPhase=0;
+  for(let w=1; w<=36; w++){
+    const fi=firstIdxOfWeek(w);
+    const ph=SESSIONS[fi].phase;
+    if(ph!==lastPhase){
+      const phWeeks=SESSIONS.filter(s=>s.phase===ph&&s.slot===0).map(s=>s.week);
+      const phDone=phWeeks.filter(x=>x<curWeek).length;
+      html+='<div class="ph-head"><span>'+phases[ph]+'</span><span>'+phDone+'/'+phWeeks.length+'</span></div>';
+      lastPhase=ph;
+    }
+    const isCur=w===curWeek, isDone=w<curWeek;
+    let dots='';
+    for(let i=0;i<3;i++){
+      const gi=fi+i;
+      const h=[...state.history].reverse().find(x=>x.idx===gi && gi<state.idx);
+      let cls='wdot';
+      if(h) cls+=h.ok?' done':' hard';
+      else if(gi===state.idx) cls+=' cur';
+      dots+='<span class="'+cls+'"></span>';
+    }
+    let body='';
+    for(let i=0;i<3;i++){
+      const s=SESSIONS[fi+i];
+      const tot=s.steps.reduce((a,st)=>a+st.min,0);
+      const km=s.steps.reduce((a,st)=>a+st.min/60*spd[st.k].v,0);
+      const ico=s.terrain==='tapis'?'':' 🌳';
+      body+='<div class="pw-sess"><span>'+s.label+ico+'</span><span class="m">'+Math.round(tot)+' min · '+km.toFixed(1)+' km</span></div>';
+    }
+    if(!isCur && state.idx<TOTAL){
+      body+='<button class="btn-ghost pw-jump" data-jump="'+w+'">Reprendre à cette semaine</button>';
+    }
+    html+='<div class="pw'+(isCur?' cur':'')+(isDone?' done':'')+(openWeeks.has(w)?' open':'')+'" data-w="'+w+'">'+
+      '<div class="pw-head"><span class="pw-num">S'+w+'</span>'+
+      '<span class="pw-title">'+weekSummary(w)+'</span>'+
+      '<span class="pw-dots">'+dots+'</span></div>'+
+      '<div class="pw-body">'+body+'</div></div>';
+  }
+  el('programView').innerHTML=html;
+  el('programView').querySelectorAll('.pw-head').forEach(h=>{
+    h.onclick=()=>{
+      const w=+h.parentElement.dataset.w;
+      openWeeks.has(w)?openWeeks.delete(w):openWeeks.add(w);
+      h.parentElement.classList.toggle('open');
+    };
+  });
+  el('programView').querySelectorAll('[data-jump]').forEach(b=>{
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      const w=+b.dataset.jump;
+      if(!confirm('Reprendre le programme à la semaine '+w+' ? Les validations au-delà seront effacées.')) return;
+      state.idx=firstIdxOfWeek(w);
+      state.history=state.history.filter(h=>h.idx<state.idx);
+      state.hardByWeek={};
+      transientNote={cls:'',txt:'Programme repositionné sur la semaine '+w+'.'};
+      save(); setTab('today');
+    };
+  });
+}
+
+function setTab(t){
+  curTab=t;
+  el('tabToday').classList.toggle('active',t==='today');
+  el('tabProgram').classList.toggle('active',t==='program');
+  el('todayView').style.display=t==='today'?'block':'none';
+  el('programView').style.display=t==='program'?'block':'none';
+  render();
+  if(t==='program'){
+    if(state.idx<TOTAL) openWeeks.add(SESSIONS[state.idx].week);
+    renderProgram();
+    const cur=el('programView').querySelector('.pw.cur');
+    if(cur) cur.scrollIntoView({block:'center'});
+  }
+}
+el('tabToday').onclick=()=>setTab('today');
+el('tabProgram').onclick=()=>setTab('program');
 
 el('spdMinus').onclick=()=>{ state.baseSpeed=Math.max(6,+(state.baseSpeed-0.5).toFixed(1)); save(); render(); };
 el('spdPlus').onclick=()=>{ state.baseSpeed=Math.min(12,+(state.baseSpeed+0.5).toFixed(1)); save(); render(); };
