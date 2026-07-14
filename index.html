@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#101418">
+<title>Semi Coach — 21,1 km</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101418; --surface:#1A2129; --surface2:#222B36;
+    --line:#2C3743; --txt:#F2F4F6; --muted:#8B96A3;
+    --led:#FF6B35; --ok:#3DDC97; --warn:#FFC145;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,'Helvetica Neue',system-ui,sans-serif;
+    font-size:16px; line-height:1.45;}
+  body{padding:max(env(safe-area-inset-top),14px) 16px calc(env(safe-area-inset-bottom) + 30px);
+    max-width:520px; margin:0 auto;}
+  h1,h2,.disp{font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:.04em;}
+  .mono{font-family:'Space Mono',monospace;}
+
+  /* ---------- header ---------- */
+  header{display:flex; align-items:baseline; justify-content:space-between; margin:4px 2px 14px;}
+  header h1{font-size:26px; font-weight:700; margin:0;}
+  header h1 em{font-style:normal; color:var(--led);}
+  .phase-tag{font-family:'Barlow Condensed'; text-transform:uppercase; letter-spacing:.08em;
+    font-size:14px; color:var(--muted);}
+
+  /* ---------- progress ---------- */
+  .progress-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:14px;}
+  .progress-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .progress-top .disp{font-size:18px; font-weight:600;}
+  .progress-top .pct{font-size:13px; color:var(--muted);}
+  .track{position:relative; height:10px; background:var(--surface2); border-radius:99px; overflow:hidden;}
+  .track-fill{position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,#E8552A,var(--led));
+    border-radius:99px; transition:width .5s ease;}
+  .milestones{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .chip{font-size:12px; padding:3px 9px; border-radius:99px; border:1px solid var(--line); color:var(--muted);}
+  .chip.done{border-color:var(--ok); color:var(--ok);}
+
+  /* ---------- session console ---------- */
+  .console{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; margin-bottom:14px;}
+  .console-head{background:#0B0E11; padding:14px 16px 12px; border-bottom:1px solid var(--line);}
+  .console-date{font-size:13px; color:var(--muted); margin-bottom:2px;}
+  .console-title{font-family:'Barlow Condensed'; font-size:22px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.03em;}
+  .readout{display:flex; gap:22px; padding:14px 16px 4px; align-items:flex-end;}
+  .readout .big{font-family:'Space Mono',monospace; font-size:44px; font-weight:700;
+    color:var(--led); line-height:1; text-shadow:0 0 18px rgba(255,107,53,.35);}
+  .readout .unit{font-size:13px; color:var(--muted); padding-bottom:6px;}
+  .readout .sec{margin-left:auto; text-align:right;}
+  .readout .sec .big{font-size:28px; color:var(--txt); text-shadow:none;}
+  .steps{padding:10px 16px 14px;}
+  .step{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line);}
+  .step:last-child{border-bottom:none;}
+  .step-dot{width:8px; height:8px; border-radius:50%; flex:0 0 8px;}
+  .dot-walk{background:var(--muted);} .dot-run{background:var(--led);}
+  .dot-fast{background:var(--warn);} .dot-race{background:#7EB8FF;}
+  .step-name{flex:1;}
+  .step-meta{font-family:'Space Mono',monospace; font-size:13px; color:var(--muted); white-space:nowrap;}
+  .btn-row{display:flex; gap:10px; padding:0 16px 16px;}
+  button{appearance:none; border:none; border-radius:12px; font-size:16px; font-weight:600;
+    padding:14px 10px; cursor:pointer; font-family:inherit;}
+  button:focus-visible{outline:2px solid var(--txt); outline-offset:2px;}
+  .btn-ok{flex:1.4; background:var(--ok); color:#06251A;}
+  .btn-hard{flex:1; background:var(--surface2); color:var(--warn); border:1px solid var(--line);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line); width:100%;}
+  .btn-led{background:var(--led); color:#2A0E02;}
+
+  /* ---------- week dots ---------- */
+  .week-strip{display:flex; align-items:center; gap:10px; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius); padding:12px 16px; margin-bottom:14px;}
+  .week-strip .lbl{font-size:14px; color:var(--muted); flex:1;}
+  .wdot{width:14px; height:14px; border-radius:50%; border:2px solid var(--line);}
+  .wdot.done{background:var(--ok); border-color:var(--ok);}
+  .wdot.hard{background:var(--warn); border-color:var(--warn);}
+  .wdot.cur{border-color:var(--led);}
+
+  /* ---------- cards ---------- */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:14px;}
+  .card h2{font-size:17px; margin:0 0 8px; font-weight:600;}
+  .note{background:var(--surface2); border-left:3px solid var(--led); border-radius:8px;
+    padding:10px 12px; font-size:14px; margin-bottom:14px;}
+  .note.good{border-left-color:var(--ok);}
+  .muted{color:var(--muted); font-size:14px;}
+  .speed-row{display:flex; align-items:center; justify-content:space-between; padding:6px 0;}
+  .stepper{display:flex; align-items:center; gap:12px;}
+  .stepper button{width:40px; height:40px; padding:0; font-size:22px; background:var(--surface2);
+    color:var(--txt); border:1px solid var(--line); border-radius:10px;}
+  .stepper .val{font-family:'Space Mono',monospace; font-size:18px; min-width:86px; text-align:center;}
+  .speeds-derived{display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:8px; font-size:14px;}
+  .speeds-derived span{color:var(--muted);}
+  .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:18px;}
+  .done-all{text-align:center; padding:30px 16px;}
+  .done-all .big{font-size:46px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Semi <em>21,1</em></h1>
+  <div class="phase-tag" id="phaseTag"></div>
+</header>
+
+<div id="noteZone"></div>
+
+<div class="progress-card">
+  <div class="progress-top">
+    <div class="disp" id="weekLabel"></div>
+    <div class="pct" id="pctLabel"></div>
+  </div>
+  <div class="track"><div class="track-fill" id="trackFill" style="width:0%"></div></div>
+  <div class="milestones" id="milestones"></div>
+</div>
+
+<div id="mainZone"></div>
+
+<div class="week-strip" id="weekStrip"></div>
+
+<div class="card" id="pauseCard"></div>
+
+<div class="card">
+  <h2>Allure de base (course facile)</h2>
+  <div class="speed-row">
+    <div class="stepper">
+      <button id="spdMinus" aria-label="Réduire la vitesse">−</button>
+      <div class="val" id="baseSpeedVal"></div>
+      <button id="spdPlus" aria-label="Augmenter la vitesse">+</button>
+    </div>
+  </div>
+  <div class="speeds-derived" id="derivedSpeeds"></div>
+  <p class="muted" style="margin:10px 0 0">Règle simple : tu dois pouvoir parler en courant à l'allure facile. Sinon, baisse la vitesse.</p>
+</div>
+
+<div class="card">
+  <h2>Programme</h2>
+  <p class="muted" id="statsLine"></p>
+  <button class="btn-ghost" id="resetBtn" style="margin-top:10px">Réinitialiser tout le programme</button>
+</div>
+
+<p class="foot">3 séances/semaine · tapis à 0 % · le programme démarre dès ta 1re séance<br>Douleur articulaire = stop &amp; repos.</p>
+
+<script>
+/* =========================================================
+   STOCKAGE — window.storage (Claude) avec repli localStorage
+   ========================================================= */
+const store = {
+  async get(k){
+    if (window.storage) { try { const r = await window.storage.get(k); return r ? r.value : null; } catch(e){ return null; } }
+    try { return localStorage.getItem(k); } catch(e){ return null; }
+  },
+  async set(k,v){
+    if (window.storage) { try { await window.storage.set(k,v); return; } catch(e){} }
+    try { localStorage.setItem(k,v); } catch(e){}
+  }
+};
+
+/* =========================================================
+   GÉNÉRATION DU PROGRAMME
+   Vitesses symboliques : walk / easy / fast / race
+   ========================================================= */
+function wu(){ return {n:'Échauffement marche', min:5, k:'walk'}; }
+function cd(){ return {n:'Retour au calme marche', min:5, k:'walk'}; }
+function reps(count, runMin, walkMin, runK='easy'){
+  const s=[wu()];
+  for(let i=1;i<=count;i++){
+    s.push({n:'Course '+i+'/'+count, min:runMin, k:runK});
+    if(i<count || walkMin>0) s.push({n:'Marche récup', min:walkMin, k:'walk'});
+  }
+  s.push(cd()); return s;
+}
+function cont(min){ return [wu(), {n:'Course continue allure facile', min:min, k:'easy'}, cd()]; }
+function tempoBlocks(totalEasyBefore, blocks, blockMin, recMin, blockK, totalEasyAfter){
+  const s=[wu()];
+  if(totalEasyBefore) s.push({n:'Course facile', min:totalEasyBefore, k:'easy'});
+  for(let i=1;i<=blocks;i++){
+    s.push({n:(blockK==='race'?'Allure semi ':'Allure soutenue ')+i+'/'+blocks, min:blockMin, k:blockK});
+    if(i<blocks) s.push({n:'Course lente récup', min:recMin, k:'walk2'});
+  }
+  if(totalEasyAfter) s.push({n:'Course facile', min:totalEasyAfter, k:'easy'});
+  s.push(cd()); return s;
+}
+
+function buildProgram(){
+  const weeks=[];
+  // ---- PHASE 1 : semaines 1-10 (3 séances identiques) ----
+  const p1=[
+    reps(8,1,2), reps(8,1.5,2), reps(7,2,2), reps(6,3,2), reps(5,4,2),
+    reps(4,5,2), reps(3,7,2), reps(3,9,1.5), reps(2,13,2), cont(28)
+  ];
+  p1.forEach((steps,i)=>{
+    weeks.push({phase:1, sessions:[
+      {label:'Séance 1 · Marche/Course', steps},
+      {label:'Séance 2 · Marche/Course', steps},
+      {label:'Séance 3 · Marche/Course', steps}
+    ]});
+  });
+  // ---- PHASE 2 : semaines 11-22 ----
+  const p2=[
+    {a:30, b:tempoBlocks(8,5,1,2,'fast',5),  c:35},
+    {a:30, b:tempoBlocks(8,5,1,2,'fast',5),  c:35},
+    {a:30, b:tempoBlocks(8,6,1,2,'fast',5),  c:40},
+    {a:30, b:tempoBlocks(8,6,1,2,'fast',5),  c:40},
+    {a:35, b:tempoBlocks(6,4,3,2,'fast',5),  c:45},
+    {a:35, b:tempoBlocks(6,4,3,2,'fast',5),  c:45},
+    {a:35, b:tempoBlocks(6,5,3,2,'fast',5),  c:50},
+    {a:35, b:tempoBlocks(6,5,3,2,'fast',5),  c:50},
+    {a:40, b:tempoBlocks(5,3,6,3,'fast',5),  c:60},
+    {a:40, b:tempoBlocks(5,3,6,3,'fast',5),  c:60},
+    {a:40, b:tempoBlocks(5,2,10,3,'fast',5), c:65},
+    {a:40, b:tempoBlocks(5,2,10,3,'fast',5), c:70}
+  ];
+  p2.forEach(w=>{
+    weeks.push({phase:2, sessions:[
+      {label:'Séance A · Facile', steps:cont(w.a)},
+      {label:'Séance B · Variée', steps:w.b},
+      {label:'Séance C · Sortie longue', steps:cont(w.c)}
+    ]});
+  });
+  // ---- PHASE 3 : semaines 23-36 ----
+  const p3=[
+    {a:40, b:tempoBlocks(5,1,20,0,'race',5), c:70},
+    {a:40, b:tempoBlocks(5,1,20,0,'race',5), c:70},
+    {a:45, b:tempoBlocks(5,2,12,3,'race',5), c:75},
+    {a:45, b:tempoBlocks(5,2,12,3,'race',5), c:75},
+    {a:45, b:tempoBlocks(5,1,25,0,'race',5), c:85},
+    {a:45, b:tempoBlocks(5,1,25,0,'race',5), c:85},
+    {a:45, b:tempoBlocks(5,2,15,3,'race',5), c:95},
+    {a:45, b:tempoBlocks(5,2,15,3,'race',5), c:95},
+    {a:50, b:tempoBlocks(5,1,30,0,'race',5), c:105},
+    {a:50, b:tempoBlocks(5,1,30,0,'race',5), c:105},
+    {a:50, b:tempoBlocks(5,1,35,0,'race',5), c:115},
+    {a:50, b:tempoBlocks(5,1,35,0,'race',5), c:115}
+  ];
+  p3.forEach(w=>{
+    weeks.push({phase:3, sessions:[
+      {label:'Séance A · Facile', steps:cont(w.a)},
+      {label:'Séance B · Allure semi', steps:w.b},
+      {label:'Séance C · Sortie longue', steps:cont(w.c)}
+    ]});
+  });
+  // ---- Semaine 35 : allègement / Semaine 36 : course ----
+  weeks.push({phase:3, taper:true, sessions:[
+    {label:'Allègement · Facile', steps:cont(35)},
+    {label:'Allègement · Rappel allure', steps:tempoBlocks(5,1,15,0,'race',5)},
+    {label:'Allègement · Courte sortie', steps:cont(50)}
+  ]});
+  weeks.push({phase:3, race:true, sessions:[
+    {label:'Décrassage · Très facile', steps:cont(25)},
+    {label:'Réveil · 4 accélérations', steps:tempoBlocks(15,4,0.5,1.5,'fast',0)},
+    {label:'🏁 SEMI-MARATHON', steps:[{n:'Course 21,1 km — pars lentement, la 1re moitié doit sembler trop facile', min:150, k:'race'}], race:true}
+  ]});
+  // Aplatir
+  const sessions=[];
+  weeks.forEach((w,wi)=>{
+    w.sessions.forEach((s,si)=>{
+      sessions.push({week:wi+1, phase:w.phase, slot:si, label:s.label, steps:s.steps,
+        race:!!s.race, taper:!!w.taper});
+    });
+  });
+  return sessions;
+}
+const SESSIONS = buildProgram();
+const TOTAL = SESSIONS.length;
+const firstIdxOfWeek = w => SESSIONS.findIndex(s=>s.week===w);
+
+/* =========================================================
+   ÉTAT
+   ========================================================= */
+let state = {
+  idx:0, baseSpeed:7.5, history:[], hardByWeek:{},
+  pausedSince:null, lastDoneDate:null
+};
+let transientNote = null;
+
+async function load(){
+  const raw = await store.get('semi-coach-state');
+  if(raw){ try{ state = Object.assign(state, JSON.parse(raw)); }catch(e){} }
+}
+async function save(){ await store.set('semi-coach-state', JSON.stringify(state)); }
+
+/* =========================================================
+   VITESSES
+   ========================================================= */
+function speeds(){
+  const b=state.baseSpeed;
+  return {
+    walk:{v:5.5,lbl:'Marche',cls:'dot-walk'},
+    walk2:{v:Math.max(5.5,+(b-1.5).toFixed(1)),lbl:'Récup lente',cls:'dot-walk'},
+    easy:{v:b,lbl:'Facile',cls:'dot-run'},
+    fast:{v:+(b+1.5).toFixed(1),lbl:'Soutenu',cls:'dot-fast'},
+    race:{v:+(b+0.8).toFixed(1),lbl:'Allure semi',cls:'dot-race'}
+  };
+}
+
+/* =========================================================
+   DATES — séances lundi / mercredi / samedi
+   ========================================================= */
+const SLOT_DAYS=[1,3,6]; // lun, mer, sam
+function nextSessionDate(){
+  let from=new Date();
+  from.setHours(0,0,0,0);
+  if(state.lastDoneDate){
+    const last=new Date(state.lastDoneDate);
+    if(last>=from) from=new Date(last.getTime()+86400000);
+  }
+  for(let i=0;i<8;i++){
+    const d=new Date(from.getTime()+i*86400000);
+    if(SLOT_DAYS.includes(d.getDay())) return d;
+  }
+  return from;
+}
+const fmtDate = d => d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+
+/* =========================================================
+   LOGIQUE ADAPTATIVE
+   ========================================================= */
+function validate(ok){
+  const s=SESSIONS[state.idx];
+  state.history.push({idx:state.idx, ok, date:new Date().toISOString()});
+  state.lastDoneDate=new Date().toISOString();
+  if(!ok){
+    state.hardByWeek[s.week]=(state.hardByWeek[s.week]||0)+1;
+    if(state.hardByWeek[s.week]>=2){
+      state.idx=firstIdxOfWeek(s.week);
+      state.hardByWeek[s.week]=0;
+      state.history=state.history.filter(h=>SESSIONS[h.idx].week!==s.week || h.idx<firstIdxOfWeek(s.week));
+      transientNote={cls:'',txt:'2 séances difficiles cette semaine → on la reprend depuis le début. C\'est le programme qui s\'adapte à toi, pas l\'inverse. Baisse éventuellement la vitesse de base.'};
+      save(); render(); return;
+    }
+    transientNote={cls:'',txt:'Séance notée « difficile ». Si la prochaine l\'est aussi, la semaine sera automatiquement refaite.'};
+  } else {
+    transientNote={cls:'good',txt:'Séance validée. Bien joué 💪'};
+  }
+  state.idx++;
+  save(); render();
+}
+
+function togglePause(){
+  if(state.pausedSince){
+    const days=Math.floor((Date.now()-new Date(state.pausedSince))/86400000);
+    const s=SESSIONS[Math.min(state.idx,TOTAL-1)];
+    let back=0, msg='Pause de '+days+' jour(s). ';
+    if(days<=7){ msg+='Aucun impact, on reprend où on en était.'; }
+    else if(days<=14){ back=0; state.idx=firstIdxOfWeek(s.week); msg+='On refait la semaine en cours pour se remettre dans le rythme.'; }
+    else if(days<=28){ back=1; msg+='On recule d\'une semaine complète.'; }
+    else { back=2; msg+='On recule de deux semaines. Reprends en douceur.'; }
+    if(back>0){
+      const target=Math.max(1, s.week-back);
+      state.idx=firstIdxOfWeek(target);
+      state.history=state.history.filter(h=>h.idx<state.idx);
+    }
+    state.pausedSince=null;
+    state.lastDoneDate=null;
+    transientNote={cls:'',txt:msg};
+  } else {
+    state.pausedSince=new Date().toISOString();
+    transientNote={cls:'',txt:'Programme en pause. À la reprise, il s\'ajustera automatiquement selon la durée de l\'arrêt.'};
+  }
+  save(); render();
+}
+
+async function resetAll(){
+  if(!confirm('Tout effacer et repartir de la semaine 1 ?')) return;
+  state={idx:0, baseSpeed:7.5, history:[], hardByWeek:{}, pausedSince:null, lastDoneDate:null};
+  transientNote=null;
+  await save(); render();
+}
+
+/* =========================================================
+   RENDU
+   ========================================================= */
+function el(id){ return document.getElementById(id); }
+
+function render(){
+  const done=Math.min(state.idx,TOTAL);
+  const finished=state.idx>=TOTAL;
+  const s=finished?null:SESSIONS[state.idx];
+  const spd=speeds();
+
+  // Header / phase
+  const phaseNames={1:'Phase 1 · Fondations',2:'Phase 2 · Endurance',3:'Phase 3 · Prépa semi'};
+  el('phaseTag').textContent=finished?'Objectif atteint':(s.race?'Semaine de course':phaseNames[s.phase]);
+
+  // Note
+  el('noteZone').innerHTML=transientNote?'<div class="note '+transientNote.cls+'">'+transientNote.txt+'</div>':'';
+
+  // Progress
+  el('weekLabel').textContent=finished?'Programme terminé':'Semaine '+s.week+' / 36';
+  el('pctLabel').textContent=done+' / '+TOTAL+' séances';
+  el('trackFill').style.width=(done/TOTAL*100)+'%';
+  const curWeek=finished?37:s.week;
+  const mile=[[10,'30 min continu'],[22,'Premier 10 km'],[34,'Sortie 17-18 km'],[36,'Semi 21,1 km']];
+  el('milestones').innerHTML=mile.map(([w,t])=>
+    '<span class="chip'+(curWeek>w?' done':'')+'">'+(curWeek>w?'✓ ':'')+t+'</span>').join('');
+
+  // Main zone
+  if(finished){
+    el('mainZone').innerHTML='<div class="console done-all"><div class="big mono" style="color:var(--ok)">21,1 KM</div>'+
+      '<p style="margin:10px 0 4px;font-weight:600">Semi-marathon accompli 🏁</p>'+
+      '<p class="muted">De la première minute de course à 21,1 km. Chapeau.</p></div>';
+  } else if(state.pausedSince){
+    el('mainZone').innerHTML='<div class="console"><div class="console-head">'+
+      '<div class="console-date">Programme en pause depuis le '+new Date(state.pausedSince).toLocaleDateString('fr-FR')+'</div>'+
+      '<div class="console-title">⏸ Pause active</div></div>'+
+      '<div class="steps"><p class="muted">Appuie sur « Reprendre » quand tu es prêt : le programme s\'ajustera tout seul selon la durée de la pause.</p></div></div>';
+  } else {
+    const total=s.steps.reduce((a,st)=>a+st.min,0);
+    const kmEst=s.steps.reduce((a,st)=>a+st.min/60*spd[st.k].v,0);
+    const stepsHtml=s.steps.map(st=>{
+      const sp=spd[st.k];
+      const min=st.min>=1?(st.min%1===0?st.min+' min':st.min+' min'):Math.round(st.min*60)+' s';
+      return '<div class="step"><span class="step-dot '+sp.cls+'"></span>'+
+        '<span class="step-name">'+st.n+'</span>'+
+        '<span class="step-meta">'+min+' · '+sp.v.toFixed(1)+' km/h</span></div>';
+    }).join('');
+    el('mainZone').innerHTML='<div class="console">'+
+      '<div class="console-head"><div class="console-date">'+fmtDate(nextSessionDate())+'</div>'+
+      '<div class="console-title">Semaine '+s.week+' — '+s.label+'</div></div>'+
+      '<div class="readout"><div><span class="big mono">'+Math.round(total)+'</span></div><div class="unit">min</div>'+
+      '<div class="sec"><span class="big mono">'+kmEst.toFixed(1)+'</span><div class="unit">km estimés</div></div></div>'+
+      '<div class="steps">'+stepsHtml+'</div>'+
+      '<div class="btn-row"><button class="btn-ok" id="okBtn">✓ Séance faite</button>'+
+      '<button class="btn-hard" id="hardBtn">Trop difficile</button></div></div>';
+    el('okBtn').onclick=()=>validate(true);
+    el('hardBtn').onclick=()=>validate(false);
+  }
+
+  // Week strip
+  if(!finished){
+    const wStart=firstIdxOfWeek(s.week);
+    let dots='';
+    for(let i=0;i<3;i++){
+      const gi=wStart+i;
+      const h=state.history.find(x=>x.idx===gi);
+      let cls='wdot';
+      if(h) cls+=h.ok?' done':' hard';
+      else if(gi===state.idx) cls+=' cur';
+      dots+='<span class="'+cls+'"></span>';
+    }
+    el('weekStrip').innerHTML='<span class="lbl">Séances de la semaine '+s.week+'</span>'+dots;
+    el('weekStrip').style.display='flex';
+  } else el('weekStrip').style.display='none';
+
+  // Pause card
+  el('pauseCard').innerHTML='<h2>Pause</h2><p class="muted" style="margin:0 0 10px">'+
+    (state.pausedSince?'Le programme est gelé. À la reprise : ≤ 7 j rien, 8-14 j semaine refaite, 15-28 j −1 semaine, au-delà −2 semaines.'
+    :'Vacances, maladie, blessure ? Mets en pause plutôt que d\'abandonner : le programme reculera intelligemment à la reprise.')+'</p>'+
+    '<button class="'+(state.pausedSince?'btn-led':'btn-ghost')+'" id="pauseBtn" style="width:100%">'+
+    (state.pausedSince?'▶ Reprendre l\'entraînement':'⏸ Mettre en pause')+'</button>';
+  el('pauseBtn').onclick=togglePause;
+
+  // Speeds
+  el('baseSpeedVal').textContent=state.baseSpeed.toFixed(1)+' km/h';
+  el('derivedSpeeds').innerHTML=
+    '<div><span>Marche</span> 5,5 km/h</div>'+
+    '<div><span>Facile</span> '+spd.easy.v.toFixed(1)+' km/h</div>'+
+    '<div><span>Soutenu</span> '+spd.fast.v.toFixed(1)+' km/h</div>'+
+    '<div><span>Allure semi</span> '+spd.race.v.toFixed(1)+' km/h</div>';
+
+  // Stats
+  const okCount=state.history.filter(h=>h.ok).length;
+  el('statsLine').textContent=okCount+' séance(s) validée(s) · '+
+    state.history.filter(h=>!h.ok).length+' difficile(s) · programme de '+TOTAL+' séances sur 36 semaines.';
+}
+
+el('spdMinus').onclick=()=>{ state.baseSpeed=Math.max(6,+(state.baseSpeed-0.5).toFixed(1)); save(); render(); };
+el('spdPlus').onclick=()=>{ state.baseSpeed=Math.min(12,+(state.baseSpeed+0.5).toFixed(1)); save(); render(); };
+el('resetBtn').onclick=resetAll;
+
+load().then(render);
+</script>
+</body>
+</html>
